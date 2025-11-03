@@ -65,6 +65,50 @@ class RecipeControllerTest {
 
     @Nested
     class CreationTests {
+        @Test
+        void testAddSoupRecipe_returns201AndLocationHeader() throws Exception {
+            ObjectNode json = mapper.createObjectNode();
+            json.put("type", "SOUP");
+            json.put("title", "Spicy Lentil Soup");
+            json.put("description", "Warm and hearty with chili flakes");
+            json.put("ingredients", "Lentils, Onions, Garlic, Chili Flakes, Broth");
+            json.put("instructions", "Simmer for 30 minutes");
+            json.put("servings", 4);
+            json.put("spiceLevel", "Medium");
+            String jsonString = mapper.writeValueAsString(json);
+
+            // Mock service return
+            Recipe saved = new SoupRecipe();
+            saved.setId(3L);
+            saved.setTitle("Spicy Lentil Soup");
+            saved.setDescription("Warm and hearty with chili flakes");
+            saved.setIngredients("Lentils, Onions, Garlic, Chili Flakes, Broth");
+            saved.setInstructions("Simmer for 30 minutes");
+            saved.setServings(4);
+            ((SoupRecipe) saved).setSpiceLevel("Medium");
+
+            when(recipeService.addRecipe(any(Recipe.class))).thenReturn(saved);
+
+            mockMvc.perform(post("/api/recipes")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(jsonString))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists("Location"))
+                    .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/recipes/3")))
+                    .andExpect(jsonPath("$.title").value("Spicy Lentil Soup"))
+                    .andExpect(jsonPath("$.id").value(3))
+                    .andExpect(jsonPath("$.description").value("Warm and hearty with chili flakes"));
+
+            // Verify captured object and interactions
+            verify(recipeService).addRecipe(recipeCaptor.capture());
+            Recipe sent = recipeCaptor.getValue();
+            assertInstanceOf(SoupRecipe.class, sent);
+            assertEquals("Spicy Lentil Soup", sent.getTitle());
+            assertEquals("Medium", ((SoupRecipe) sent).getSpiceLevel());
+
+            verifyNoMoreInteractions(recipeService);
+        }
+
 
         @Test
         void testAddRecipe_thenAnswer_andArgumentCaptor_andInOrder_andNoMoreInteractions() throws Exception {
@@ -107,6 +151,7 @@ class RecipeControllerTest {
             // ensure nothing else on the service was called
             verifyNoMoreInteractions(recipeService);
         }
+
 
         @ParameterizedTest
         @CsvSource({

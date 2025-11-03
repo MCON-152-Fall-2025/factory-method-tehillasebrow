@@ -1,12 +1,15 @@
 package com.mcon152.recipeshare.web;
 
 public class RecipeRequest {
-    private String type; // BASIC, VEGETARIAN, DESSERT, DAIRY
+    private String type; // BASIC, VEGETARIAN, DESSERT, DAIRY, SOUP
     private String title;
     private String description;
     private String ingredients;
     private String instructions;
     private Integer servings;
+
+    // 🆕 field for SoupRecipe only
+    private String spiceLevel;
 
     public RecipeRequest() {}
 
@@ -27,5 +30,8 @@ public class RecipeRequest {
 
     public Integer getServings() { return servings; }
     public void setServings(Integer servings) { this.servings = servings; }
-}
 
+    // 🆕 getters and setters for Soup
+    public String getSpiceLevel() { return spiceLevel; }
+    public void setSpiceLevel(String spiceLevel) { this.spiceLevel = spiceLevel; }
+}

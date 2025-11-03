@@ -1,5 +1,6 @@
 package com.mcon152.recipeshare;
 
+<<<<<<< HEAD
 public class Recipe {
     private Long id;
     private String title;
@@ -11,11 +12,49 @@ public class Recipe {
     public Recipe() {}
 
     public Recipe(Long id, String title, String description, String ingredients, String instructions) {
+=======
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "recipes")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "recipe_type", discriminatorType = DiscriminatorType.STRING, columnDefinition = "VARCHAR(31) DEFAULT 'BASIC'")
+public class Recipe {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+    private String description;
+
+    @Column(length = 2000)
+    private String ingredients;
+
+    @Column(length = 4000)
+    private String instructions;
+
+    private Integer servings; // New field for number of servings
+
+    // Map discriminator column as a read-only field so DDL/copy operations include it; make it nullable and
+    // give a default so schema updates that INSERT without the column won't violate NOT NULL.
+    @Column(name = "recipe_type", insertable = false, updatable = false, nullable = true,
+            columnDefinition = "VARCHAR(31) DEFAULT 'BASIC'")
+    private String recipeType;
+
+    // Constructors
+    public Recipe() {}
+
+    public Recipe(Long id, String title, String description, String ingredients, String instructions, Integer servings) {
+>>>>>>> factory_method
         this.id = id;
         this.title = title;
         this.description = description;
         this.ingredients = ingredients;
         this.instructions = instructions;
+<<<<<<< HEAD
+=======
+        this.servings = servings;
+>>>>>>> factory_method
     }
 
     // Getters and setters
@@ -33,4 +72,16 @@ public class Recipe {
 
     public String getInstructions() { return instructions; }
     public void setInstructions(String instructions) { this.instructions = instructions; }
+<<<<<<< HEAD
 }
+=======
+
+    public Integer getServings() { return servings; }
+    public void setServings(Integer servings) { this.servings = servings; }
+
+    // Read-only access to discriminator value
+    public String getRecipeType() { return recipeType; }
+}
+
+
+>>>>>>> factory_method

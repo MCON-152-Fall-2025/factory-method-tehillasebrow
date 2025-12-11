@@ -1,193 +1,156 @@
 package com.mcon152.recipeshare.web;
 
 import com.mcon152.recipeshare.Recipe;
-<<<<<<< HEAD
-import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-=======
 import com.mcon152.recipeshare.service.RecipeFactory;
 import com.mcon152.recipeshare.service.RecipeService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
->>>>>>> factory_method
 
 @RestController
 @RequestMapping("/api/recipes")
 public class RecipeController {
-<<<<<<< HEAD
-    private final List<Recipe> recipes = new ArrayList<>();
 
-    private final AtomicLong counter = new AtomicLong();
-    RecipeController() {}
+    // 1. Static Logger Constant
+    private static final Logger logger = LoggerFactory.getLogger(RecipeController.class);
 
-    /**
-     * Adds a new recipe to the list.
-     *
-     * @param recipe the recipe to add
-     * @return the added recipe with its assigned ID
-     */
-    @PostMapping
-    public Recipe addRecipe(@RequestBody Recipe recipe) {
-        recipe.setId(counter.incrementAndGet());
-        recipes.add(recipe);
-        return recipe;
-    }
-
-    /**
-     * Retrieves all recipes.
-     *
-     * @return a list of all recipes
-     */
-    @GetMapping
-    public List<Recipe> getAllRecipes() {
-        return recipes;
-    }
-
-    /**
-     * Retrieves a recipe by its ID.
-     *
-     * @param id the ID of the recipe to retrieve
-     * @return the recipe with the specified ID, or null if not found
-     */
-    @GetMapping("/{id}")
-    public Recipe getRecipeById(@PathVariable long id) {
-        for (Recipe recipe : recipes) {
-            if (recipe.getId() == id) {
-                return recipe;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Deletes a recipe by its ID.
-     *
-     * @param id the ID of the recipe to delete
-     * @return true if the recipe was deleted, false if not found
-     */
-    @DeleteMapping("/{id}")
-    public boolean deleteRecipe(@PathVariable long id) {
-        for (int i = 0; i < recipes.size(); i++) {
-            if (recipes.get(i).getId() == id) {
-                recipes.remove(i);
-                return true;
-            }
-        }
-        return false;
-    }
-    /**
-     * Updates an existing recipe by its ID.
-     *
-     * @param id the ID of the recipe to update
-     * @param updatedRecipe the updated recipe data
-     * @return the updated recipe, or null if not found
-     */
-    @PutMapping("/{id}")
-    public Recipe updateRecipe(@PathVariable long id, @RequestBody Recipe updatedRecipe) {
-        throw new UnsupportedOperationException("Update recipe not implemented");
-    }
-
-    /**
-     * Partially updates an existing recipe by its ID.
-     *
-     * @param id the ID of the recipe to update
-     * @param partialRecipe the partial recipe data to update
-     * @return the updated recipe, or null if not found
-     */
-    @PatchMapping("/{id}")
-    public Recipe patchRecipe(@PathVariable long id, @RequestBody Recipe partialRecipe) {
-        throw new UnsupportedOperationException("Update recipe not implemented");
-    }
-}
-=======
     private final RecipeService recipeService;
 
     public RecipeController(RecipeService recipeService) {
         this.recipeService = recipeService;
     }
 
-    /**
-     * Create a new recipe.
-     * Returns 201 Created with Location header pointing to the new resource.
-     */
     @PostMapping
     public ResponseEntity<Recipe> addRecipe(@RequestBody RecipeRequest recipeRequest) {
+        // 2. Trace Entry
+        logger.info("POST /api/recipes - incoming create request");
+        // Log Debug summary (Fix: use getTitle instead of getName)
+        logger.debug("Incoming recipe body: title='{}', type='{}'",
+                recipeRequest.getTitle(), recipeRequest.getType());
+
         try {
             Recipe toSave = RecipeFactory.createFromRequest(recipeRequest);
+
+            // 3. MDC for tracing
+            MDC.put("recipeName", toSave.getTitle());
+
             Recipe saved = recipeService.addRecipe(toSave);
 
             URI location = ServletUriComponentsBuilder
-                    .fromCurrentRequest()           // /api/recipes
-                    .path("/{id}")                  // /{id}
+                    .fromCurrentRequest()
+                    .path("/{id}")
                     .buildAndExpand(saved.getId())
                     .toUri();
 
+            // 4. Trace Success
+            logger.info("Created recipe with id={}", saved.getId());
+
             return ResponseEntity.created(location).body(saved);
         } catch (Exception e) {
+            // 5. Trace Error with Exception
+            logger.error("Error occurred while adding recipe: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
+        } finally {
+            MDC.remove("recipeName");
         }
     }
 
-    /**
-     * Retrieve all recipes. 200 OK.
-     */
     @GetMapping
     public ResponseEntity<List<Recipe>> getAllRecipes() {
+        logger.info("GET /api/recipes - retrieving all recipes");
         return ResponseEntity.ok(recipeService.getAllRecipes());
     }
 
-    /**
-     * Retrieve a recipe by id. 200 OK or 404 Not Found.
-     */
     @GetMapping("/{id}")
     public ResponseEntity<Recipe> getRecipeById(@PathVariable long id) {
+        logger.info("GET /api/recipes/{} - retrieving recipe", id);
+
         return recipeService.getRecipeById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .map(recipe -> {
+                    logger.info("Returning recipe id={}", id);
+                    return ResponseEntity.ok(recipe);
+                })
+                .orElseGet(() -> {
+                    // 6. Trace 404 Warn
+                    logger.warn("Recipe not found: id={}", id);
+                    return ResponseEntity.notFound().build();
+                });
     }
 
-    /**
-     * Delete a recipe. 204 No Content if deleted, 404 Not Found otherwise.
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRecipe(@PathVariable long id) {
+        logger.info("DELETE /api/recipes/{} - delete requested", id);
+
         try {
             boolean deleted = recipeService.deleteRecipe(id);
-            return deleted
-                    ? ResponseEntity.noContent().build()
-                    : ResponseEntity.notFound().build();
+
+            if (deleted) {
+                logger.info("Deleted recipe id={}", id);
+                return ResponseEntity.noContent().build();
+            } else {
+                logger.warn("Delete failed — recipe not found id={}", id);
+                return ResponseEntity.notFound().build();
+            }
+
         } catch (Exception e) {
+            logger.error("Unexpected error while deleting recipe id={}: {}", id, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    /**
-     * Replace a recipe (full update). 200 OK with updated entity or 404 Not Found.
-     */
     @PutMapping("/{id}")
     public ResponseEntity<Recipe> updateRecipe(@PathVariable long id, @RequestBody RecipeRequest updatedRequest) {
+        logger.info("PUT /api/recipes/{} - full update requested", id);
+        logger.debug("Update body: title='{}', type='{}'",
+                updatedRequest.getTitle(), updatedRequest.getType());
+
         Recipe updatedRecipe = RecipeFactory.createFromRequest(updatedRequest);
-        return recipeService.updateRecipe(id, updatedRecipe)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        // Fix: getTitle instead of getName
+        MDC.put("recipeName", updatedRecipe.getTitle());
+
+        try {
+            return recipeService.updateRecipe(id, updatedRecipe)
+                    .map(r -> {
+                        logger.info("Updated recipe id={}", id);
+                        return ResponseEntity.ok(r);
+                    })
+                    .orElseGet(() -> {
+                        logger.warn("Update failed — recipe not found id={}", id);
+                        return ResponseEntity.notFound().build();
+                    });
+        } finally {
+            MDC.remove("recipeName");
+        }
     }
 
-    /**
-     * Partial update. 200 OK with updated entity or 404 Not Found.
-     */
     @PatchMapping("/{id}")
     public ResponseEntity<Recipe> patchRecipe(@PathVariable long id, @RequestBody RecipeRequest partialRequest) {
+        logger.info("PATCH /api/recipes/{} - partial update requested", id);
+        logger.debug("Patch body: title='{}', type='{}'",
+                partialRequest.getTitle(), partialRequest.getType());
+
         Recipe partialRecipe = RecipeFactory.createFromRequest(partialRequest);
-        return recipeService.patchRecipe(id, partialRecipe)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        // Fix: getTitle instead of getName
+        MDC.put("recipeName", partialRecipe.getTitle());
+
+        try {
+            return recipeService.patchRecipe(id, partialRecipe)
+                    .map(r -> {
+                        logger.info("Patched recipe id={}", id);
+                        return ResponseEntity.ok(r);
+                    })
+                    .orElseGet(() -> {
+                        logger.warn("Patch failed — recipe not found id={}", id);
+                        return ResponseEntity.notFound().build();
+                    });
+        } finally {
+            MDC.remove("recipeName");
+        }
     }
 }
->>>>>>> factory_method

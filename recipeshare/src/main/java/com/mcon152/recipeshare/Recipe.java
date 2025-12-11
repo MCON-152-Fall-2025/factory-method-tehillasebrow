@@ -1,18 +1,5 @@
 package com.mcon152.recipeshare;
 
-<<<<<<< HEAD
-public class Recipe {
-    private Long id;
-    private String title;
-    private String description;
-    private String ingredients;
-    private String instructions;
-
-    // Constructors
-    public Recipe() {}
-
-    public Recipe(Long id, String title, String description, String ingredients, String instructions) {
-=======
 import jakarta.persistence.*;
 
 @Entity
@@ -45,16 +32,15 @@ public class Recipe {
     public Recipe() {}
 
     public Recipe(Long id, String title, String description, String ingredients, String instructions, Integer servings) {
->>>>>>> factory_method
         this.id = id;
         this.title = title;
         this.description = description;
         this.ingredients = ingredients;
         this.instructions = instructions;
-<<<<<<< HEAD
-=======
         this.servings = servings;
->>>>>>> factory_method
+    }
+
+    public Recipe(long l, String cake, String deliciousCake, String s, String mixAndBake) {
     }
 
     // Getters and setters
@@ -72,9 +58,6 @@ public class Recipe {
 
     public String getInstructions() { return instructions; }
     public void setInstructions(String instructions) { this.instructions = instructions; }
-<<<<<<< HEAD
-}
-=======
 
     public Integer getServings() { return servings; }
     public void setServings(Integer servings) { this.servings = servings; }
@@ -82,6 +65,3 @@ public class Recipe {
     // Read-only access to discriminator value
     public String getRecipeType() { return recipeType; }
 }
-
-
->>>>>>> factory_method

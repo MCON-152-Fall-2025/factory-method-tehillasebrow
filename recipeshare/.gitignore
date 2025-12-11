@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+<<<<<<< HEAD
+=======
+/src/test/java/com/mcon152/recipeshare/service/RecipeServiceTestSolution.java
+>>>>>>> factory_method
